@@ -19,3 +19,11 @@
 
 # Go workspace file
 go.work
+
+# visual studio code workspace files
+.vscode
+.DS_Store
+# executables of e2e tests
+e2e/web/web
+e2e/wen-gorilla-gorm/web-gorilla-gorm
+e2e/web-gorilla-sqlz/web-gorilla-sqlz
