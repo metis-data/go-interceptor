@@ -27,3 +27,4 @@ go.work
 e2e/web/web
 e2e/wen-gorilla-gorm/web-gorilla-gorm
 e2e/web-gorilla-sqlz/web-gorilla-sqlz
+.idea
