@@ -25,7 +25,7 @@ type User struct {
 func main() {
 	log.Printf("starting web server")
 
-	// Create a new metis tracer provider
+	// create a new metis tracer provider
 	tp, err := metis.NewTracerProvider()
 	if err != nil {
 		log.Fatal(err)
@@ -39,6 +39,7 @@ func main() {
 
 	// Create a new gorilla/mux router
 	router := mux.NewRouter()
+
 	router.HandleFunc("/", getRoot)
 
 	// Wrap the router with the metis handler
@@ -83,10 +84,9 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	gormDB = gormDB.WithContext(r.Context()) // make sure to pass the request context to GORM
 	var users []User
 	gormDB.Raw(fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)).Find(&users)
-
 	for _, user := range users {
 		fmt.Printf("ID: %d, Name: %s\n", user.ID, user.Name)
 	}

@@ -2,16 +2,20 @@ package metis
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 
-	"github.com/uptrace/opentelemetry-go-extra/otelsql"
+	"github.com/LeonPev/otelsql"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
@@ -38,17 +42,36 @@ func NewTracerProviderWithLogin(url, apiKey string) (*trace.TracerProvider, erro
 	if err != nil {
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
-	return trace.NewTracerProvider(
+	// exporter, err := stdouttrace.New() // TODO: remove
+	// if err != nil {
+	// 	return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
+	// }
+	tp := trace.NewTracerProvider(
 		trace.WithBatcher(exporter),
 		trace.WithResource(newResource()),
-	), nil
+	)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+	return tp, nil
 }
 
 // OpenDB returns a new wrapped sql.DB connection.
 func OpenDB(dataSourceName string) (*sql.DB, error) {
 	return otelsql.Open("postgres", dataSourceName, otelsql.WithAttributes(
 		semconv.DBSystemPostgreSQL,
-	))
+	), otelsql.WithSQLCommenter(true))
+}
+
+type dsnConnector struct {
+	dsn    string
+	driver driver.Driver
+}
+
+func (t dsnConnector) Connect(_ context.Context) (driver.Conn, error) {
+	return t.driver.Open(t.dsn)
+}
+
+func (t dsnConnector) Driver() driver.Driver {
+	return t.driver
 }
 
 // NewHandler returns a new http.Handler that instruments requests with OpenTelemetry.
@@ -71,7 +94,6 @@ func newMetisServer(url, apiKey string) *metisServer {
 }
 
 func (m *metisServer) Write(p []byte) (n int, err error) {
-	// fmt.Println(string(p)) // TODO: remove
 	req, err := http.NewRequest("POST", m.url, bytes.NewReader(p))
 	if err != nil {
 		return 0, err

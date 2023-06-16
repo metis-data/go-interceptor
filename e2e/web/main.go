@@ -16,7 +16,7 @@ import (
 
 func main() {
 	log.Printf("starting web server")
-
+	os.Setenv("METIS_API_KEY", "42") // TODO: remove
 	// create a new metis tracer provider
 	tp, err := metis.NewTracerProvider()
 	if err != nil {
@@ -68,7 +68,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	query := fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)
-	rows, err := db.Query(query)
+	rows, err := db.QueryContext(r.Context(), query) // make sure to pass the context here
 	if err != nil {
 		log.Fatal(err)
 	}

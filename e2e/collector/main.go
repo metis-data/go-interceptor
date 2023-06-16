@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -20,11 +20,12 @@ func main() {
 
 	spans := make(chan string)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		body, err := ioutil.ReadAll(r.Body)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("ioutil.ReadAll() error = %v", err)
+			log.Printf("io.ReadAll() error = %v", err)
 		}
 		bodyStr := string(body)
+		log.Println(bodyStr)
 		spans <- bodyStr
 		w.WriteHeader(http.StatusOK)
 	})
@@ -55,13 +56,13 @@ func main() {
 
 	for {
 		select {
-		case <-time.After(30 * time.Second):
+		case <-time.After(60 * time.Second):
 			log.Printf("timeout")
 			os.Exit(1)
 		case span := <-spans:
 			log.Println("recived span")
 			recivedSpans = append(recivedSpans, span)
-			if len(recivedSpans) == 10 {
+			if len(recivedSpans) == 3*len(urls) {
 				if sqlQueryIsCorrect(recivedSpans, len(urls)) {
 					os.Exit(0)
 				} else {
@@ -77,7 +78,7 @@ func main() {
 func sqlQueryIsCorrect(spans []string, expected int) bool {
 	count := 0
 	for _, span := range spans {
-		if strings.Contains(span, "SELECT id, name FROM my_schema.my_table") {
+		if strings.Contains(span, "SELECT id, name FROM my_schema.my_table /*traceparent=") {
 			count++
 		}
 	}

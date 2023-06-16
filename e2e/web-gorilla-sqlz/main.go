@@ -78,7 +78,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	err = sqlz.New(db, "postgres").
 		Select("id", "name").
 		From("my_schema.my_table").
-		GetRow(&user)
+		GetRowContext(r.Context(), &user) // make sure to pass the request context
 	if err != nil {
 		panic(err)
 	}
