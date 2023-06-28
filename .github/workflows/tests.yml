@@ -22,3 +22,5 @@ jobs:
         run: make unittest
       - name: Run e2e
         run: make run-e2e
+        with:
+          platforms: linux/amd64
