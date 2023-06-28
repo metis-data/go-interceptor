@@ -1,0 +1,82 @@
+version: '3.7'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:14.2-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=my_database
+      - PGDATA=/var/lib/postgresql/data
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  web:
+    container_name: go-web
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      - PORT=8080
+      - METIS_EXPORTER_URL=http://collector:9411/debug
+      - METIS_API_KEY=42
+      # - METIS_EXPORTER_URL=https://0671u5v0uk.execute-api.eu-central-1.amazonaws.com/debug
+      # - METIS_API_KEY=rNgs7LrsGJ2CwEAQj3TS252ex9stK3QY3yxYqKmp
+      
+  web-gorilla-gorm:
+    container_name: go-web-gorilla-gorm
+    build:
+      context: ./web-gorilla-gorm
+      dockerfile: Dockerfile
+    ports:
+      - 8081:8081
+    environment:
+      - PORT=8081
+      - METIS_EXPORTER_URL=http://collector:9411/debug
+      - METIS_API_KEY=42
+
+  web-gorilla-sqlz:
+    container_name: go-web-gorilla-sqlz
+    build:
+      context: ./web-gorilla-sqlz
+      dockerfile: Dockerfile
+    ports:
+      - 8082:8082
+    environment:
+      - PORT=8082
+      - METIS_EXPORTER_URL=http://collector:9411/debug
+      - METIS_API_KEY=42 
+  
+  # balagan:
+  #   container_name: go-balagan
+  #   build:
+  #     context: ./balagan
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - 8083:8083
+  #   environment:
+  #     - PORT=8083
+  #     - METIS_EXPORTER_URL=http://collector:9411/debug
+  #     - METIS_API_KEY=42
+
+  collector:
+    container_name: collector
+    build:
+      context: ./collector
+      dockerfile: Dockerfile
+    ports:
+      - 9411:9411
+    environment:
+      - PORT=9411
+      - DST_WEB=http://web:8080
+      - DST_WEB_GORILLA_GORM=http://web-gorilla-gorm:8081
+      - DST_WEB_GORILLA_SQLZ=http://web-gorilla-sqlz:8082
+      - DST_BALAGAN=http://balagan:8083
+
+volumes:
+  db-data:
