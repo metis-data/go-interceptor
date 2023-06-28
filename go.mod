@@ -20,6 +20,7 @@ require (
 
 require (
 	github.com/felixge/httpsnoop v1.0.3 // indirect
+	github.com/getsentry/sentry-go v0.22.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/sqlcommenter/go/core v0.0.5-beta // indirect

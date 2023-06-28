@@ -13,9 +13,12 @@ import (
 	_ "github.com/lib/pq"
 	metis "github.com/metis-data/go-interceptor"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+var tp *trace.TracerProvider
 
 type User struct {
 	ID   int
@@ -26,7 +29,8 @@ func main() {
 	log.Printf("starting web server")
 
 	// create a new metis tracer provider
-	tp, err := metis.NewTracerProvider()
+	var err error
+	tp, err = metis.NewTracerProvider()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,6 +45,7 @@ func main() {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", getRoot)
+	router.HandleFunc("/shutdown", shutdownHandler)
 
 	// Wrap the router with the metis handler
 	handler := metis.NewHandler(router, "http-server-goriila-gorm")
@@ -57,6 +62,12 @@ func main() {
 	} else if err != nil {
 		log.Printf("error starting server: %s\n", err)
 		os.Exit(1)
+	}
+}
+
+func shutdownHandler(w http.ResponseWriter, r *http.Request) {
+	if err := tp.Shutdown(context.Background()); err != nil {
+		log.Fatal(err)
 	}
 }
 

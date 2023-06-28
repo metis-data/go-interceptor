@@ -50,6 +50,16 @@ func main() {
 			}
 			resp.Body.Close()
 		}
+		time.Sleep(2 * time.Second)
+		// send shutdown request
+		for _, url := range urls {
+			log.Printf("sending shutdown request to %s", url)
+			resp, err := http.Get(fmt.Sprintf("%s/shutdown", url))
+			if err != nil {
+				log.Printf("http.Get() error = %v", err)
+			}
+			resp.Body.Close()
+		}
 	}(urls)
 
 	recivedSpans := []string{}
@@ -62,7 +72,7 @@ func main() {
 		case span := <-spans:
 			log.Println("recived span")
 			recivedSpans = append(recivedSpans, span)
-			if len(recivedSpans) == 3*len(urls) {
+			if len(recivedSpans) == len(urls) {
 				if sqlQueryIsCorrect(recivedSpans, len(urls)) {
 					os.Exit(0)
 				} else {

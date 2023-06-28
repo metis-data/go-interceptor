@@ -12,13 +12,17 @@ import (
 	_ "github.com/lib/pq"
 	metis "github.com/metis-data/go-interceptor"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
+
+var tp *trace.TracerProvider
 
 func main() {
 	log.Printf("starting web server")
 	os.Setenv("METIS_API_KEY", "42") // TODO: remove
 	// create a new metis tracer provider
-	tp, err := metis.NewTracerProvider()
+	var err error
+	tp, err = metis.NewTracerProvider()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,6 +35,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
+	mux.HandleFunc("/shutdown", shutdownHandler)
 	// wrap the mux with the metis handler
 	handler := metis.NewHandler(http.HandlerFunc(mux.ServeHTTP), "http-server")
 
@@ -46,6 +51,12 @@ func main() {
 	} else if err != nil {
 		log.Printf("error starting server: %s\n", err)
 		os.Exit(1)
+	}
+}
+
+func shutdownHandler(w http.ResponseWriter, r *http.Request) {
+	if err := tp.Shutdown(context.Background()); err != nil {
+		log.Fatal(err)
 	}
 }
 
