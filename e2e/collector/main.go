@@ -92,5 +92,6 @@ func sqlQueryIsCorrect(spans []string, expected int) bool {
 			count++
 		}
 	}
+	fmt.Printf("got %d query spans\n", count)
 	return count == expected
 }

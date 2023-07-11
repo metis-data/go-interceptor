@@ -42,11 +42,9 @@ func main() {
 
 	// Create a new gorilla/mux router
 	router := mux.NewRouter()
-	router.HandleFunc("/", getRoot)
-	router.HandleFunc("/shutdown", shutdownHandler)
-
-	// Wrap the router with the metis handler
-	handler := metis.NewHandler(router, "http-server-gorilla-sqlz")
+	router.HandleFunc("/", metis.WrapHandlerFunc(getRoot, "/"))                         // Wrap each handler with the metis handler
+	router.HandleFunc("/shutdown", metis.WrapHandlerFunc(shutdownHandler, "/shutdown")) // Wrap each handler with the metis handler
+	handler := metis.NewHandler(router, "web-go-sqlz")                                  // Wrap the router with the metis handler
 
 	port := os.Getenv("PORT")
 	if port == "" {

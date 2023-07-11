@@ -48,8 +48,11 @@ func main() {
 	router.HandleFunc("/shutdown", shutdownHandler)
 
 	// Wrap the router with the metis handler
-	handler := metis.NewHandler(router, "http-server-goriila-gorm")
-
+	metisRouter, err := metis.WrapGorillaMuxRouter(router)
+	if err != nil {
+		log.Fatal(err)
+	}
+	handler := metis.NewHandler(metisRouter, "web-go-gorm")
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
