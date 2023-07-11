@@ -36,12 +36,13 @@ func main() {
 	mux := metis.NewServeMux() // use metis.NewServeMux() instead of http.NewServeMux()
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/shutdown", shutdownHandler)
+	// Wrap the router with the metis handler
+	handler := metis.NewHandler(mux, "my-web-service")
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	handler := metis.NewHandler(mux, "my-web-service")
 	log.Printf("Listening on port %s\n", port)
 	err = http.ListenAndServe(fmt.Sprintf(":%s", port), handler)
 	if errors.Is(err, http.ErrServerClosed) {
