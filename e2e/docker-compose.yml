@@ -51,18 +51,6 @@ services:
       - PORT=8082
       - METIS_EXPORTER_URL=http://collector:9411/debug
       - METIS_API_KEY=42 
-  
-  # balagan:
-  #   container_name: go-balagan
-  #   build:
-  #     context: ./balagan
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - 8083:8083
-  #   environment:
-  #     - PORT=8083
-  #     - METIS_EXPORTER_URL=http://collector:9411/debug
-  #     - METIS_API_KEY=42
 
   collector:
     container_name: collector
