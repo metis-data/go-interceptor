@@ -44,7 +44,8 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", metis.WrapHandlerFunc(getRoot, "/"))                         // Wrap each handler with the metis handler
 	router.HandleFunc("/shutdown", metis.WrapHandlerFunc(shutdownHandler, "/shutdown")) // Wrap each handler with the metis handler
-	handler := metis.NewHandler(router, "web-go-sqlz")                                  // Wrap the router with the metis handler
+	// Wrap the router with the metis handler
+	handler := metis.NewHandler(router, "web-go-sqlz")
 
 	port := os.Getenv("PORT")
 	if port == "" {
