@@ -12,6 +12,7 @@ import (
 
 	"github.com/LeonPev/otelsql"
 	"github.com/getsentry/sentry-go"
+	"github.com/gorilla/mux"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -82,7 +83,6 @@ func newMetisExporter(url, apiKey string) (*metisExporter, error) {
 	loader := &spanLoader{}
 	loadExp, err := stdouttrace.New(
 		stdouttrace.WithWriter(loader),
-		stdouttrace.WithoutTimestamps(),
 	)
 	if err != nil {
 		sentry.CaptureException(err)
@@ -212,7 +212,6 @@ func (m *metisServer) Export(p []byte) error {
 // func newExporter(w io.Writer) (trace.SpanExporter, error) {
 // 	return stdouttrace.New(
 // 		stdouttrace.WithWriter(w),
-// 		stdouttrace.WithoutTimestamps(),
 // 	)
 // }
 
@@ -237,7 +236,66 @@ func OpenDB(dataSourceName string) (*sql.DB, error) {
 	), otelsql.WithSQLCommenter(true))
 }
 
+// WrapHandler wraps an http.Handler with OpenTelemetry instrumentation.
+func WrapHandler(handler http.Handler, pattern string) http.Handler {
+	return otelhttp.WithRouteTag(pattern, handler)
+}
+
+// WrapHandlerFunc wraps an http.HandlerFunc with OpenTelemetry instrumentation.
+func WrapHandlerFunc(handlerFunc http.HandlerFunc, pattern string) http.HandlerFunc {
+	return otelhttp.WithRouteTag(pattern, handlerFunc).ServeHTTP
+}
+
 // NewHandler returns a new http.Handler that instruments requests with OpenTelemetry.
-func NewHandler(handler http.Handler, operation string) http.Handler {
-	return otelhttp.NewHandler(handler, operation)
+func NewHandler(handler http.Handler, operation string, opts ...otelhttp.Option) http.Handler {
+	return otelhttp.NewHandler(handler, operation, opts...)
+}
+
+type ServeMux struct {
+	*http.ServeMux
+}
+
+func NewServeMux() *ServeMux {
+	return &ServeMux{
+		ServeMux: http.NewServeMux(),
+	}
+}
+
+func (sm *ServeMux) Handle(pattern string, handler http.Handler) {
+	sm.ServeMux.Handle(
+		pattern, otelhttp.WithRouteTag(pattern, handler),
+	)
+}
+
+func (sm *ServeMux) HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request)) {
+	sm.ServeMux.HandleFunc(
+		pattern, otelhttp.WithRouteTag(
+			pattern, http.HandlerFunc(handler),
+		).ServeHTTP,
+	)
+}
+
+func (sm *ServeMux) Handler(r *http.Request) (h http.Handler, pattern string) {
+	return sm.ServeMux.Handler(r)
+}
+
+func (sm *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	sm.ServeMux.ServeHTTP(w, r)
+}
+
+func WrapGorillaMuxRouter(router *mux.Router) (*mux.Router, error) {
+	newRouter := mux.NewRouter()
+	err := router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		tpl, err := route.GetPathTemplate()
+		if err != nil {
+			return err
+		}
+		handler := route.GetHandler()
+		newRouter.Handle(tpl, otelhttp.WithRouteTag(tpl, handler))
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return newRouter, nil
 }

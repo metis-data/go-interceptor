@@ -1,7 +1,7 @@
 build-e2e:
-	GOOS=linux GOARCH=amd64 go build -o e2e/web-gorilla-gorm/web-gorilla-gorm e2e/web-gorilla-gorm/main.go
-	GOOS=linux GOARCH=amd64 go build -o e2e/web/web e2e/web/main.go
-	GOOS=linux GOARCH=amd64 go build -o e2e/web-gorilla-sqlz/web-gorilla-sqlz e2e/web-gorilla-sqlz/main.go
+	GOOS=linux go build -o e2e/web-gorilla-gorm/web-gorilla-gorm e2e/web-gorilla-gorm/main.go
+	GOOS=linux go build -o e2e/web/web e2e/web/main.go
+	GOOS=linux go build -o e2e/web-gorilla-sqlz/web-gorilla-sqlz e2e/web-gorilla-sqlz/main.go
 
 run-e2e: build-e2e
 	docker-compose -f e2e/docker-compose.yml down -v --remove-orphans
