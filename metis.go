@@ -81,6 +81,7 @@ func newMetisExporter(url, apiKey string) (*metisExporter, error) {
 		client: &http.Client{},
 	}
 	loader := &spanLoader{}
+
 	loadExp, err := stdouttrace.New(
 		stdouttrace.WithWriter(loader),
 	)
@@ -100,6 +101,14 @@ func newMetisExporter(url, apiKey string) (*metisExporter, error) {
 func (m *metisExporter) ExportSpans(ctx context.Context, spans []trace.ReadOnlySpan) error {
 	// export spans to metis server. With size limit of queueSize bytes.
 	for _, span := range spans {
+		relevanSpan, err := m.isRelevant(span)
+		if err != nil {
+			sentry.CaptureException(err)
+			return err
+		}
+		if !relevanSpan {
+			continue
+		}
 		size, err := m.getSpanSize(span)
 		if err != nil {
 			sentry.CaptureException(err)
@@ -116,6 +125,29 @@ func (m *metisExporter) ExportSpans(ctx context.Context, spans []trace.ReadOnlyS
 		m.queueBytesSize += size
 	}
 	return nil
+}
+
+var (
+	spanTextIdentifierSQL  = `"Key":"db.statement"`
+	spanTextIdentifierHTTP = `"Key":"http.route"`
+)
+
+func (m *metisExporter) isRelevant(span trace.ReadOnlySpan) (bool, error) {
+	err := m.loadExp.ExportSpans(context.Background(), []trace.ReadOnlySpan{span})
+	if err != nil {
+		return false, err
+	}
+	spanText := m.loader.spanText
+	// check sql
+	if strings.Contains(spanText, spanTextIdentifierSQL) {
+		return true, nil
+	}
+	// check http
+	if strings.Contains(spanText, spanTextIdentifierHTTP) {
+		return true, nil
+	}
+	return false, nil
+
 }
 
 func (m *metisExporter) getSpanSize(span trace.ReadOnlySpan) (int, error) {
@@ -180,6 +212,7 @@ type spanLoader struct {
 }
 
 func (s *spanLoader) Write(p []byte) (n int, err error) {
+
 	s.spanText = string(p)
 	return len(p), nil
 }

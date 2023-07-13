@@ -40,18 +40,28 @@ func TestNewTracerProvider(t *testing.T) {
 	}
 	otel.SetTracerProvider(tp)
 
-	// send a trace
-	_, span := otel.Tracer("balagan").Start(context.Background(), "gadol")
+	spanTextIdentifierHTTP = "balagan1"
+	spanTextIdentifierSQL = "balagan2"
+	// send a traces
+	_, span := otel.Tracer("balagan1").Start(context.Background(), "gadol")
+	span.End()
+	_, span = otel.Tracer("balagan2").Start(context.Background(), "gadol")
+	span.End()
+	_, span = otel.Tracer("balagan3").Start(context.Background(), "gadol")
 	span.End()
 
 	// flush all spans
 	if err := tp.Shutdown(context.Background()); err != nil {
 		t.Errorf("tp.Shutdown() error = %v", err)
 	}
-	if !strings.Contains(mm.spans[0], "balagan") || !strings.Contains(mm.spans[0], "gadol") {
-		t.Errorf("expected span to contain balagan gadol")
+	if len(mm.spans) != 1 {
+		t.Errorf("expected 1 spans got %d", len(mm.spans))
+	}
+	if !strings.Contains(mm.spans[0], "balagan") {
+		t.Errorf("expected span to contain balagan")
 	}
 }
+
 func TestTraceProviderBatcherWithByteSizeLimit(t *testing.T) {
 	queueSize = 10000
 	mm := &metisMockServer{t: t}
@@ -67,9 +77,11 @@ func TestTraceProviderBatcherWithByteSizeLimit(t *testing.T) {
 	}
 	otel.SetTracerProvider(tp)
 
+	spanTextIdentifierHTTP = "balagan"
 	// send traces to fill up the batcher
 	for i := 0; i < 10; i++ {
-		_, span := otel.Tracer(fmt.Sprintf("test-%d", i)).Start(context.Background(), "Run")
+
+		_, span := otel.Tracer(fmt.Sprintf("balagan-%d", i)).Start(context.Background(), "Run")
 		span.End()
 	}
 
@@ -81,19 +93,19 @@ func TestTraceProviderBatcherWithByteSizeLimit(t *testing.T) {
 	if len(mm.spans) != 2 {
 		t.Fatalf("expected 2 span chanks, got %d", len(mm.spans))
 	}
-	if len(mm.spans[0]) != 9433 {
-		t.Errorf("expected 9433 span, got %d", len(mm.spans[0]))
+	if len(mm.spans[0]) < 9690 || len(mm.spans[0]) > 9710 {
+		t.Errorf("expected 9700 span, got %d", len(mm.spans[0]))
 	}
-	if len(mm.spans[1]) != 1049 {
-		t.Errorf("expected 1049 span, got %d", len(mm.spans[1]))
+	if len(mm.spans[1]) != 1079 {
+		t.Errorf("expected 1079 span, got %d", len(mm.spans[1]))
 	}
 	// check all spans where processed
 	for i := 0; i < 9; i++ {
-		if !strings.Contains(mm.spans[0], fmt.Sprintf("test-%d", i)) {
+		if !strings.Contains(mm.spans[0], fmt.Sprintf("balagan-%d", i)) {
 			t.Errorf("expected span %d to be in the first batch", i)
 		}
 	}
-	if !strings.Contains(mm.spans[1], "test-9") {
+	if !strings.Contains(mm.spans[1], "balagan-9") {
 		t.Errorf("expected span 9 to be in the second batch")
 	}
 	// check if the spanc are valid json
