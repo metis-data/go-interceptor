@@ -41,7 +41,6 @@ func TestNewTracerProvider(t *testing.T) {
 	otel.SetTracerProvider(tp)
 
 	spanTextIdentifierHTTP = "balagan1"
-	spanTextIdentifierSQL = "balagan2"
 	// send a traces
 	_, span := otel.Tracer("balagan1").Start(context.Background(), "gadol")
 	span.End()

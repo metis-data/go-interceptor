@@ -128,7 +128,6 @@ func (m *metisExporter) ExportSpans(ctx context.Context, spans []trace.ReadOnlyS
 }
 
 var (
-	spanTextIdentifierSQL  = `"Key":"db.statement"`
 	spanTextIdentifierHTTP = `"Key":"http.route"`
 )
 
@@ -138,10 +137,6 @@ func (m *metisExporter) isRelevant(span trace.ReadOnlySpan) (bool, error) {
 		return false, err
 	}
 	spanText := m.loader.spanText
-	// check sql
-	if strings.Contains(spanText, spanTextIdentifierSQL) {
-		return true, nil
-	}
 	// check http
 	if strings.Contains(spanText, spanTextIdentifierHTTP) {
 		return true, nil

@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -73,25 +72,8 @@ func main() {
 			log.Println("recived span")
 			recivedSpans = append(recivedSpans, span)
 			if len(recivedSpans) == len(urls) {
-				if sqlQueryIsCorrect(recivedSpans, len(urls)) {
-					os.Exit(0)
-				} else {
-					fmt.Println("sql query is not in spans")
-					fmt.Println(recivedSpans)
-					os.Exit(2)
-				}
+				os.Exit(0)
 			}
 		}
 	}
-}
-
-func sqlQueryIsCorrect(spans []string, expected int) bool {
-	count := 0
-	for _, span := range spans {
-		if strings.Contains(span, "SELECT id, name FROM my_schema.my_table /*traceparent=") {
-			count++
-		}
-	}
-	fmt.Printf("got %d query spans\n", count)
-	return count == expected
 }
