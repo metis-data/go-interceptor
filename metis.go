@@ -124,6 +124,13 @@ func (m *metisExporter) ExportSpans(ctx context.Context, spans []trace.ReadOnlyS
 		m.queue = append(m.queue, span)
 		m.queueBytesSize += size
 	}
+	if m.queueBytesSize > 0 {
+		err := m.exportQueue(ctx)
+		if err != nil {
+			sentry.CaptureException(err)
+			return err
+		}
+	}
 	return nil
 }
 
@@ -235,13 +242,6 @@ func (m *metisServer) Export(p []byte) error {
 	resp.Body.Close()
 	return nil
 }
-
-// newExporter returns a console exporter.
-// func newExporter(w io.Writer) (trace.SpanExporter, error) {
-// 	return stdouttrace.New(
-// 		stdouttrace.WithWriter(w),
-// 	)
-// }
 
 // newResource returns a resource describing this application.
 func newResource() *resource.Resource {
