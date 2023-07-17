@@ -56,8 +56,9 @@ func NewTracerProviderWithLogin(url, apiKey string) (*trace.TracerProvider, erro
 		sentry.CaptureException(err)
 		return nil, fmt.Errorf("creating OTLP trace exporter: %w", err)
 	}
+	batchSpanProcessor := trace.NewBatchSpanProcessor(exporter)
 	tp := trace.NewTracerProvider(
-		trace.WithSyncer(exporter),
+		trace.WithSpanProcessor(batchSpanProcessor),
 		trace.WithResource(newResource()),
 	)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
