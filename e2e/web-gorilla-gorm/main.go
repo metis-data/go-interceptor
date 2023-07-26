@@ -104,7 +104,10 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	gormDB = gormDB.WithContext(r.Context()) // make sure to pass the request context to GORM
+
+	// make sure to pass the request context to GORM
+	// r *http.Request
+	gormDB = gormDB.WithContext(r.Context())
 	var users []User
 	gormDB.Raw(query).Find(&users)
 	for _, user := range users {
