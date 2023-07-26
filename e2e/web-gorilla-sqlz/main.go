@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -78,14 +79,20 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)
 
+	var db *sql.DB
+	var err error
+	var sqlzDB *sqlz.DB
+
 	// Open a connection to the database via metis API
-	db, err := metis.OpenDB(dataSourceName)
+	db, err = metis.OpenDB(dataSourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 	var user User
-	err = sqlz.New(db, "postgres").
+	sqlzDB = sqlz.New(db, "postgres")
+
+	err = sqlzDB.
 		Select("id", "name").
 		From("my_schema.my_table").
 		GetRowContext(r.Context(), &user) // make sure to pass the request context

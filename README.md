@@ -15,10 +15,10 @@
 
 ## Usage
 - Run 
-```
+```shell
 go get github.com/metis-data/go-interceptor \
   go.opentelemetry.io/otel \
-  go.opentelemetry.io/otel/sdk/trace \
+  go.opentelemetry.io/otel/sdk/trace
 ```
 
 - Set the api key environment variable: ```METIS_API_KEY```
@@ -28,6 +28,14 @@ go get github.com/metis-data/go-interceptor \
 - Enable Otel instrumentation:
   1. Set up Tracer:
   ```go
+  import (
+    metis "github.com/metis-data/go-interceptor"
+    _ "github.com/lib/pq"
+    "go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/sdk/trace"
+  )
+  
+  var tp *trace.TracerProvider
   var err error
   tp, err = metis.NewTracerProvider()
   if err != nil {
@@ -43,6 +51,15 @@ go get github.com/metis-data/go-interceptor \
   2. Wrap your http server with metis:
   ```go	
   // net/http
+  
+  import (
+    "fmt"
+    "net/http"
+    
+    metis "github.com/metis-data/go-interceptor"
+    _ "github.com/lib/pq"
+  )
+  
   // use metis.NewServeMux() instead of http.NewServeMux()
   mux := metis.NewServeMux() 
   mux.HandleFunc("/api/endpoint", someHandler)
@@ -54,6 +71,16 @@ go get github.com/metis-data/go-interceptor \
   ```
   ```go
   // gorilla/mux
+  
+  import (
+    "fmt"
+    "net/http"
+    
+    "github.com/gorilla/mux"
+    metis "github.com/metis-data/go-interceptor"
+    _ "github.com/lib/pq"
+  )
+  
   // Create a new gorilla/mux router
   router := mux.NewRouter()
 
@@ -70,6 +97,16 @@ go get github.com/metis-data/go-interceptor \
   ```
   3. Wrap your database connection with metis:
   ```go
+
+  import (
+    "database/sql"
+    "fmt"
+    "log"
+
+    metis "github.com/metis-data/go-interceptor"
+    _ "github.com/lib/pq"
+  )
+
   dbHost := "postgres"
   dbPort := 5432
   dbUser := "postgres"
@@ -80,8 +117,11 @@ go get github.com/metis-data/go-interceptor \
   dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
       dbHost, dbPort, dbUser, dbPassword, dbName)
 
+  var db *sql.DB
+  var err error
+  
   // Open a connection to the database via metis API
-  db, err := metis.OpenDB(dataSourceName)
+  db, err = metis.OpenDB(dataSourceName)
   if err != nil {
       log.Fatal(err)
   }
@@ -90,10 +130,22 @@ go get github.com/metis-data/go-interceptor \
   4. Pass context in queries:
   ```go
   // lib/pq
+  
+  import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+  )
+  
   query := fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)
   
+  var rows *sql.Rows
+  var err error
+  
   // make sure to pass the context here
-  rows, err := db.QueryContext(r.Context(), query)
+  // r *http.Request
+  rows, err = db.QueryContext(r.Context(), query)
   if err != nil {
       log.Fatal(err)
   }
@@ -101,9 +153,23 @@ go get github.com/metis-data/go-interceptor \
   ```
   ```go
   // gorm
+  
+  import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+    
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
+  )
+  
   query := fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)
   
-  gormDB, err := gorm.Open(postgres.New(postgres.Config{
+  var gormDB *gorm.DB
+  var err error
+  
+  gormDB, err = gorm.Open(postgres.New(postgres.Config{
       Conn: db,
   }), &gorm.Config{})
   if err != nil {
@@ -111,19 +177,37 @@ go get github.com/metis-data/go-interceptor \
   }
   
   // make sure to pass the context here
+  // r *http.Request
   gormDB = gormDB.WithContext(r.Context())
   var users []User
   gormDB.Raw(query).Find(&users)
   ```
   ```go
   // ido50/sqlz
+  
+  import (
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+    
+    "github.com/ido50/sqlz"
+  )
+
+  var sqlzDB *sqlz.DB
   var user User
-  err = sqlz.New(db, "postgres").
-      Select("id", "name").
-      From("my_schema.my_table").
-      GetRowContext(r.Context(), &user) // make sure to pass the context here
+  var err error
+  
+  sqlzDB = sqlz.New(db, "postgres")
+
+  // make sure to pass the request context here
+  // r *http.Request
+  err = sqlzDB.
+  Select("id", "name").
+  From("my_schema.my_table").
+  GetRowContext(r.Context(), &user)
   if err != nil {
-      panic(err)
+    panic(err)
   }
   ```
 

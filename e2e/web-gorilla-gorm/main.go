@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -29,6 +30,7 @@ func main() {
 	log.Printf("starting web server")
 
 	// create a new metis tracer provider
+	var tp *trace.TracerProvider
 	var err error
 	tp, err = metis.NewTracerProvider()
 	if err != nil {
@@ -85,14 +87,18 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)
 
+	var db *sql.DB
+	var gormDB *gorm.DB
+	var err error
 	// Open a connection to the database via metis API
-	db, err := metis.OpenDB(dataSourceName)
+	db, err = metis.OpenDB(dataSourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
+	query := fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)
+	gormDB, err = gorm.Open(postgres.New(postgres.Config{
 		Conn: db,
 	}), &gorm.Config{})
 	if err != nil {
@@ -100,7 +106,7 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	gormDB = gormDB.WithContext(r.Context()) // make sure to pass the request context to GORM
 	var users []User
-	gormDB.Raw(fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)).Find(&users)
+	gormDB.Raw(query).Find(&users)
 	for _, user := range users {
 		fmt.Printf("ID: %d, Name: %s\n", user.ID, user.Name)
 	}
