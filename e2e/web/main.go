@@ -83,7 +83,10 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	query := fmt.Sprintf("SELECT id, name FROM %s.my_table", dbSchema)
-	rows, err := db.QueryContext(r.Context(), query) // make sure to pass the context here
+
+	// make sure to pass the context here
+	// r *http.Request
+	rows, err = db.QueryContext(r.Context(), query)
 	if err != nil {
 		log.Fatal(err)
 	}
