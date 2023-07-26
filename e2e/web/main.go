@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"io"
@@ -19,7 +20,6 @@ var tp *trace.TracerProvider
 
 func main() {
 	log.Printf("starting web server")
-	os.Setenv("METIS_API_KEY", "42") // TODO: remove
 	// create a new metis tracer provider
 	var err error
 	tp, err = metis.NewTracerProvider()
@@ -54,6 +54,7 @@ func main() {
 }
 
 func shutdownHandler(w http.ResponseWriter, r *http.Request) {
+	log.Print("Shutdown Server")
 	if err := tp.Shutdown(context.Background()); err != nil {
 		log.Fatal(err)
 	}
@@ -70,8 +71,12 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	dataSourceName := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		dbHost, dbPort, dbUser, dbPassword, dbName)
 
+	var db *sql.DB
+	var rows *sql.Rows
+	var err error
+
 	// Open a connection to the database via metis api
-	db, err := metis.OpenDB(dataSourceName)
+	db, err = metis.OpenDB(dataSourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
