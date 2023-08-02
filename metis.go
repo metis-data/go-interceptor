@@ -246,11 +246,15 @@ func (m *metisServer) Export(p []byte) error {
 
 // newResource returns a resource describing this application.
 func newResource() *resource.Resource {
+	serviceName := os.Getenv("METIS_SERVICE_NAME")
+	if serviceName == "" {
+		serviceName = "metis-go-client"
+	}
 	r, _ := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceName("metis-go-client"),
+			semconv.ServiceName(serviceName),
 			semconv.ServiceVersion("v0.1.0"),
 			attribute.String("environment", "demo"),
 		),
