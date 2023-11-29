@@ -249,13 +249,27 @@ func newResource() *resource.Resource {
 	if serviceName == "" {
 		serviceName = "metis-go-client"
 	}
-	r, _ := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceName(serviceName),
-			semconv.ServiceVersion("v0.1.0"),
-		),
+	telemetrySDKVersion := ""
+	telemetrySDKName := ""
+	hostName := ""
+	defaultResourceAttributes := resource.Default().Attributes()
+	for _, attr := range defaultResourceAttributes {
+		if attr.Key == semconv.TelemetrySDKVersionKey {
+			telemetrySDKVersion = attr.Value.AsString()
+		} else if attr.Key == semconv.TelemetrySDKNameKey {
+			telemetrySDKName = attr.Value.AsString()
+		} else if attr.Key == semconv.HostNameKey {
+			hostName = attr.Value.AsString()
+		}
+
+	}
+	r := resource.NewSchemaless(
+		semconv.ServiceName(serviceName),
+		semconv.ServiceVersion("v0.1.0"),
+		semconv.TelemetrySDKVersion(telemetrySDKVersion),
+		semconv.TelemetrySDKName(telemetrySDKName),
+		semconv.TelemetrySDKLanguageGo,
+		semconv.HostName(hostName),
 	)
 	return r
 }
