@@ -251,15 +251,12 @@ func newResource() *resource.Resource {
 	}
 	telemetrySDKVersion := ""
 	telemetrySDKName := ""
-	hostName := ""
 	defaultResourceAttributes := resource.Default().Attributes()
 	for _, attr := range defaultResourceAttributes {
 		if attr.Key == semconv.TelemetrySDKVersionKey {
 			telemetrySDKVersion = attr.Value.AsString()
 		} else if attr.Key == semconv.TelemetrySDKNameKey {
 			telemetrySDKName = attr.Value.AsString()
-		} else if attr.Key == semconv.HostNameKey {
-			hostName = attr.Value.AsString()
 		}
 
 	}
@@ -269,7 +266,6 @@ func newResource() *resource.Resource {
 		semconv.TelemetrySDKVersion(telemetrySDKVersion),
 		semconv.TelemetrySDKName(telemetrySDKName),
 		semconv.TelemetrySDKLanguageGo,
-		semconv.HostName(hostName),
 	)
 	return r
 }
